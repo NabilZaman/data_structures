@@ -162,6 +162,8 @@ class BTree(object):
 
     def find_greatest(self):
         """ Return the greatest key value in the tree. """
+        if self.is_empty():
+            return
         if self.is_leaf():
             return self.keys[-1]
         else:
@@ -169,6 +171,8 @@ class BTree(object):
 
     def find_least(self):
         """ Return the least key value in the tree. """
+        if self.is_empty():
+            return
         if self.is_leaf():
             return self.keys[0]
         else:
@@ -180,7 +184,6 @@ class BTree(object):
 
         Do nothing if the node is not below needed capacity.
         """
-        print "Merging if necessary:", self.is_too_empty()
         if self.is_too_empty():
             self.parent._merge_child_with_key(self.keys[0])
 
@@ -203,17 +206,25 @@ class BTree(object):
         if child_index + 1 < len(self.children) and \
             len(self.children[child_index+1].keys) > self.order/2:
             right_child = self.children[child_index+1]
+            print "Rotating left", child.keys
             # Rotate "to the left"
             child.keys.append(self.keys[child_index])
-            self.keys[child_index] = right_child.keys[0]
-            right_child.delete(right_child.keys[0])
+            self.keys[child_index] = right_child.keys.pop(0)
+            if not right_child.is_leaf():
+                transfer_children = right_child.children.pop(0)
+                child.children.append(transfer_children)
+                transfer_children.parent = child
         elif child_index - 1 >= 0 and \
             len(self.children[child_index-1].keys) > self.order/2:
             left_child = self.children[child_index-1]
+            print "Rotating right", child.keys
             # Rotate "to the right"
-            self.child.keys.append(self.keys[child_index-1])
-            self.keys[child_index-1] = left_child.keys[-1]
-            left_child.delete(left_child.keys[-1])
+            self.child.keys.insert(0, self.keys[child_index-1])
+            self.keys[child_index-1] = left_child.pop()
+            if not left_child.is_leaf():
+                transfer_children = left_child.children.pop()
+                child.children.insert(0, transfer_children)
+                transfer_children.parent = child
         else:
             if child_index + 1 < len(self.children):
                 # Merge with the right_child
@@ -231,14 +242,21 @@ class BTree(object):
                 right_child.keys
             newChildren = left_child.children + right_child.children
 
-            # Add the new merged child to your list of children
-            mergedChild = BTree(self.order, parent=self, keys=newKeys,\
-                children=newChildren)
-            self.children = self.children[:left_child_index] +\
-                [mergedChild] + self.children[right_child_index+1:]
+            if not self.keys:
+                # You're the root and you've removed your last key
+                self.keys = newKeys
+                self.children = newChildren
+                for child in self.children:
+                    child.parent = self
+            else:
+                # Add the new merged child to your list of children
+                mergedChild = BTree(self.order, parent=self, keys=newKeys,\
+                    children=newChildren)
+                self.children = self.children[:left_child_index] +\
+                    [mergedChild] + self.children[right_child_index+1:]
 
-            # Merge yourself if this caused you to grow too small
-            self._merge_if_needed()
+                # Merge yourself if this caused you to grow too small
+                self._merge_if_needed()
 
 
     def _split_if_needed(self):
@@ -333,8 +351,6 @@ class BTree(object):
         """ Return number of keys in tree. """
         return len(self.keys) + sum(len(child) for child in self.children)
 
-    # More to come?
-
 if __name__ == '__main__':
     test_list1 = [1, 3, 5, 7, 9, 11, 13]
     test_list2 = [2, 4, 6, 8, 10, 12]
@@ -347,7 +363,8 @@ if __name__ == '__main__':
 
     tree = BTree(5)
     tree.insert_all(range(100))
-    tree.delete_all(range(36))
+    tree.delete_all(range(100))
+    print tree.keys
     print len(tree)
     print tree.size
     print tree
