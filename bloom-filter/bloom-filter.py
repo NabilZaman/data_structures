@@ -10,9 +10,6 @@ https://en.wikipedia.org/wiki/Bloom_filter
 
 import mmh3
 
-
-
-
 class BloomFilter(object):
     """
     Basic implementation of a bloom filter, using extra bits for
@@ -83,4 +80,7 @@ element in the hash range can not exceed 8.""")
         set_bits(h, incremented_bits[-self.counting_bits:])
 
 
-
+if __name__ == '__main__':
+    bloom = BloomFilter()
+    d = {}
+    data = [chr(num) for num in range(ord('a'), ord('z')+1)]
